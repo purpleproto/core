@@ -121,7 +121,7 @@ func deserializeFrameBody(body []byte) (domain.Frame, error) {
 	}
 
 	payload := parts[3]
-	if len(payload) != nonceLen+cipherLen {
+	if len(payload) != nonceLen+cipherLen+padLen {
 		return domain.Frame{}, fmt.Errorf("payload length mismatch")
 	}
 
