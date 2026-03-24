@@ -38,7 +38,7 @@ func (c *Core) InspectHandshake(header []byte, observedAt time.Time) handshake.R
 }
 
 func (c *Core) Seal(sessionSalt, payload, aad []byte) (domain.Frame, error) {
-	key := pcrypto.DeriveSessionKey(c.cfg.MasterPassword, sessionSalt, c.cfg.Argon2)
+	key := pcrypto.DeriveSessionKey(c.cfg.MasterPassword, sessionSalt, c.cfg.KDF)
 	nonce, ciphertext, err := pcrypto.SealFrame(key, payload, aad)
 	if err != nil {
 		return domain.Frame{}, err
@@ -48,6 +48,6 @@ func (c *Core) Seal(sessionSalt, payload, aad []byte) (domain.Frame, error) {
 }
 
 func (c *Core) Open(sessionSalt []byte, frame domain.Frame, aad []byte) ([]byte, error) {
-	key := pcrypto.DeriveSessionKey(c.cfg.MasterPassword, sessionSalt, c.cfg.Argon2)
+	key := pcrypto.DeriveSessionKey(c.cfg.MasterPassword, sessionSalt, c.cfg.KDF)
 	return pcrypto.OpenFrame(key, frame.Nonce, frame.Ciphertext, aad)
 }
