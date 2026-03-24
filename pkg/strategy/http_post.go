@@ -64,7 +64,7 @@ func ParseHTTPPostBody(raw []byte) ([]byte, error) {
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		return nil, fmt.Errorf("read request body", err)
+		return nil, fmt.Errorf("read request body: %w", err)
 	}
 
 	return body, nil
