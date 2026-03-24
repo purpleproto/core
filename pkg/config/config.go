@@ -8,24 +8,29 @@ import (
 )
 
 const (
-	defaultHeaderSize = 16
-	defaultKeyLen     = 32
+	defaultHeaderSize    = 16
+	defaultSessionKeyLen = 32
+	defaultKDFIterations = 600000
 )
 
-type Argon2Config struct {
+type KDFConfig struct {
+	Iterations uint32
+	KeyLen     uint32
+
+	// Argon2id params
 	Time    uint32
 	Memory  uint32
 	Threads uint8
-	KeyLen  uint32
 }
 
 type Config struct {
-	MasterPassword string
-	HTTPFallback   []byte
-	HeaderSize     int
-	Window         domain.TimestampWindow
-	Argon2         Argon2Config
-	Strategies     []domain.StrategyName
+	MasterPassword       string
+	HTTPFallback         []byte
+	HeaderSize           int
+	Window               domain.TimestampWindow
+	KDF                  KDFConfig
+	HandshakeMinDuration time.Duration
+	Strategies           []domain.StrategyName
 }
 
 func Default(masterPassword string) Config {
@@ -37,11 +42,14 @@ func Default(masterPassword string) Config {
 			Past:   30 * time.Second,
 			Future: 30 * time.Second,
 		},
-		Argon2: Argon2Config{
-			Time:   1,
-			Memory: 64 * 1024,
-			KeyLen: defaultKeyLen,
+		KDF: KDFConfig{
+			Iterations: defaultKDFIterations,
+			KeyLen:     defaultSessionKeyLen,
+			Time:       1,
+			Memory:     64 * 1024,
+			Threads:    4,
 		},
+		HandshakeMinDuration: 5 * time.Millisecond,
 		Strategies: []domain.StrategyName{
 			domain.StrategyNoise,
 		},
@@ -57,12 +65,32 @@ func (c Config) Validate() error {
 		return errors.New("header size must be positive")
 	}
 
-	if c.Argon2.KeyLen == 0 {
+	if c.KDF.KeyLen == 0 {
 		return errors.New("argon2 key length must be positive")
+	}
+
+	if c.KDF.Iterations == 0 {
+		return errors.New("kdf iterations must be positive")
+	}
+
+	if c.KDF.Time == 0 {
+		return errors.New("kdf argon2id time must be positive")
+	}
+
+	if c.KDF.Memory == 0 {
+		return errors.New("kdf argon2id memory must be positive")
+	}
+
+	if c.KDF.Threads == 0 {
+		return errors.New("kdf argon2id threads must be positive")
 	}
 
 	if c.Window.Past < 0 || c.Window.Future < 0 {
 		return errors.New("timestamp window must be non-negative")
+	}
+
+	if c.HandshakeMinDuration < 0 {
+		return errors.New("handshake min duration must be non-negative")
 	}
 
 	return nil
